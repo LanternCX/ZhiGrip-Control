@@ -53,7 +53,7 @@ class Arm {
          * @param speed 到位速度（单位 rpm，正为 CCW，负为 CW，范围 ±5000）
          * @param acc 加速度（0~255），0 表示直接启动，默认 0
          */
-        virtual void set_joint_angle(float j1, float j2, float j3, uint16_t speed = 30, uint8_t acc = 0);
+        virtual void set_joint_angle(float j1, float j2, float j3, uint16_t speed = 50, uint8_t acc = 0);
 
         /**
          * @brief 设置关节速度
