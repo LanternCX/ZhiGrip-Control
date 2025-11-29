@@ -23,6 +23,11 @@
 Arm::ArmParam arm_pargram = {1, 2, 3, 1, 1, 1, 20.0};
 Arm arm(Serial1, arm_pargram);
 
+Stepper claw(Serial1, 4);
+
+// 0 闭合 1 张开
+bool claw_state = 0;
+
 Servo servo;
 
 // 将角度映射为占空比值
@@ -46,18 +51,21 @@ uint32_t angleToDuty(float angle) {
  */
 void claw_open() {
 
-  float startAngle = 1;     // 起始角度（闭合）
-  float endAngle = 90;      // 目标角度（张开）
-  float step = 2;           // 每次增加的角度
-  int delayTime = 15;       // 每步之间的延时（毫秒）
+  // float startAngle = 1;     // 起始角度（闭合）
+  // float endAngle = 90;      // 目标角度（张开）
+  // float step = 2;           // 每次增加的角度
+  // int delayTime = 15;       // 每步之间的延时（毫秒）
 
-  for (float angle = startAngle; angle <= endAngle; angle += step) 
-  {
-    uint32_t duty = angleToDuty(angle);                  // 计算对应占空比
-    ledcWrite(SERVO_CHANNEL, duty);                      // 输出PWM信号
-    delay(delayTime);                                    // 延时控制转动速度
+  // for (float angle = startAngle; angle <= endAngle; angle += step) 
+  // {
+  //   uint32_t duty = angleToDuty(angle);                  // 计算对应占空比
+  //   ledcWrite(SERVO_CHANNEL, duty);                      // 输出PWM信号
+  //   delay(delayTime);                                    // 延时控制转动速度
+  // }
+  if (claw_state == 0) {
+    claw.add_position(3200 * 6, 200);
+    claw_state = 1;
   }
-
 }
 
 /**
@@ -66,18 +74,21 @@ void claw_open() {
  */
 void claw_close() {
 
-  float startAngle = 90;     // 起始角度（张开）
-  float endAngle = 1;      // 目标角度（闭合）
-  float step = 2;           // 每次增加的角度（步进越小动作越平滑）
-  int delayTime = 40;       // 每步之间的延时（毫秒）
+  // float startAngle = 90;     // 起始角度（张开）
+  // float endAngle = 1;      // 目标角度（闭合）
+  // float step = 2;           // 每次增加的角度（步进越小动作越平滑）
+  // int delayTime = 40;       // 每步之间的延时（毫秒）
 
-  for (float angle = startAngle; angle >= endAngle; angle -= step) 
-  {
-    uint32_t duty = angleToDuty(angle);                  // 计算对应占空比
-    ledcWrite(SERVO_CHANNEL, duty);                      // 输出PWM信号
-    delay(delayTime);                                    // 延时控制转动速度
+  // for (float angle = startAngle; angle >= endAngle; angle -= step) 
+  // {
+  //   uint32_t duty = angleToDuty(angle);                  // 计算对应占空比
+  //   ledcWrite(SERVO_CHANNEL, duty);                      // 输出PWM信号
+  //   delay(delayTime);                                    // 延时控制转动速度
+  // }
+  if (claw_state == 1) {
+    claw.add_position(-3200 * 6, 200);
+    claw_state = 0;
   }
-
 }
 
 void serial_on_msg() {
@@ -90,13 +101,24 @@ void serial_on_msg() {
     int j2 = tokens[2].toInt();
     int j3 = tokens[3].toInt();
 
+    int j4 = tokens[4].toInt();
+
     j1 = clip(j1, -50, 50);
     j2 = clip(j2, -50, 50);
     j3 = clip(j3, -50, 50);
 
-    Serial.println("J1: " + String(j1) + " J2: " + String(j2) + " J3: " + String(j3));
+    // <0 闭合 >0 张开
+    if (tokens.size() == 5) {
+      j4 = clip(j4, -200, 200);
+    }
+
+    Serial.println("J1: " + String(j1) + " J2: " + String(j2) + " J3: " + String(j3) + " J4: " + String(j4));
 
     arm.set_joint_speed(j1, j2, j3);
+
+    if (tokens.size() == 5) {
+      claw.set_speed(j4);
+    }
   }
 
   if (tokens[0] == "ANGLE") {
@@ -105,7 +127,7 @@ void serial_on_msg() {
     int j3 = tokens[1].toInt();
 
     j1 = clip(-j1, -70, 70);
-    j2 = clip(j2, -70, 70);
+    j2 = clip(j2, -85, 85);
     j3 = clip(j3, -180, 180);
 
     Serial.println("J1: " + String(j1) + " J2: " + String(j2) + " J3: " + String(j3));
